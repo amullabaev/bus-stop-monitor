@@ -1,0 +1,176 @@
+/* LED dot-matrix departure board look, inspired by classic bus-stop split-flap/LED displays */
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0 0.75rem 2rem;
+  background: #000;
+  color: #ffb347;
+  font-family: "Doto", monospace;
+  font-variation-settings: "ROND" 100;
+}
+
+header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  background: #000;
+  border-bottom: 2px solid #333;
+  padding: 0.75rem 0.25rem;
+  margin-bottom: 0.25rem;
+  z-index: 10;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.3rem, 6vw, 1.8rem);
+  color: #e8e8e8;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: #9a9a9a;
+}
+
+.nav-link {
+  color: #9a9a9a;
+  text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
+  font-size: 0.9rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.4rem 0.9rem;
+  border: 2px solid #555;
+  background: #111;
+  color: #e8e8e8;
+  cursor: pointer;
+}
+
+button:active {
+  background: #333;
+}
+
+.col-headers {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr 4rem;
+  gap: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: #9a9a9a;
+  text-transform: uppercase;
+}
+
+.col-headers span:last-child {
+  text-align: right;
+}
+
+.platform-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: #777;
+  text-transform: uppercase;
+  padding: 0.6rem 0.6rem 0.2rem;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr 4rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.6rem;
+  margin-bottom: 0.35rem;
+  background: #0e0e0e;
+  background-image: radial-gradient(circle, #1c1c1c 1px, transparent 1px);
+  background-size: 5px 5px;
+  border-radius: 4px;
+}
+
+.board-row .route {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.board-row .destination {
+  font-size: 1.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-row .time {
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+#status {
+  color: #9a9a9a;
+  padding: 0 0.6rem;
+}
+
+.stale {
+  color: #d97a00;
+}
+.stop-input {
+  flex: 1 1 10rem;
+  min-height: 44px;
+  padding: 0.4rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  border: 2px solid #555;
+  background: #111;
+  color: #ffb347;
+}
+
+.stop-picker {
+  position: relative;
+  flex: 1 1 10rem;
+  display: flex;
+}
+.stop-picker .stop-input {
+  width: 100%;
+}
+.stop-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 50vh;
+  overflow-y: auto;
+  background: #111;
+  border: 2px solid #555;
+  z-index: 20;
+}
+.stop-suggestions li {
+  padding: 0.75rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+.stop-suggestions li.active,
+.stop-suggestions li:hover {
+  background: #ffb347;
+  color: #000;
+}
+.stop-suggestions li.empty {
+  cursor: default;
+}

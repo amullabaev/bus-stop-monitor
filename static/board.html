@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <title>Tablica LED</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Doto:wght@400..900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="board.css" />
+</head>
+
+<body>
+  <header>
+    <div class="stop-picker">
+      <input id="stop-input" class="stop-input" type="search" role="combobox" aria-controls="stop-suggestions"
+        placeholder="Wpisz nazwę przystanku" autocomplete="off" aria-label="Przystanek" />
+      <ul id="stop-suggestions" class="stop-suggestions" role="listbox" hidden></ul>
+    </div>
+    <select id="platform-select" class="stop-input" aria-label="Peron" hidden></select>
+    <div class="header-actions">
+      <a class="nav-link" href="index.html">Widok mobilny</a>
+      <span id="updated-at">—</span>
+      <button id="refresh-btn">Odśwież</button>
+    </div>
+  </header>
+  <div class="col-headers">
+    <span>Linia</span>
+    <span>Kierunek</span>
+    <span>Za</span>
+  </div>
+  <main id="platforms">
+    <p id="status">Ładowanie…</p>
+  </main>
+  <script src="stop-picker.js"></script>
+  <script src="board.js"></script>
+</body>
+
+</html>

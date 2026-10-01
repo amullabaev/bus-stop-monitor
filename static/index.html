@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Odjazdy</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header>
+    <h1>Odjazdy</h1>
+    <div class="stop-picker">
+      <input id="stop-input" class="stop-input" type="search" role="combobox" aria-controls="stop-suggestions"
+        placeholder="Wpisz nazwę przystanku" autocomplete="off" aria-label="Przystanek" />
+      <ul id="stop-suggestions" class="stop-suggestions" role="listbox" hidden></ul>
+    </div>
+    <div class="header-actions">
+      <a class="nav-link" href="board.html">Tablica LED</a>
+      <span id="updated-at">—</span>
+      <button id="refresh-btn">Odśwież</button>
+    </div>
+  </header>
+  <main id="platforms">
+    <p id="status">Ładowanie…</p>
+  </main>
+  <script src="stop-picker.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
