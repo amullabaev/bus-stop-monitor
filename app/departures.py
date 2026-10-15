@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import time
+import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+
+import requests
 
 from . import config
 from .gtfs_realtime import StopPrediction, get_realtime_trip_ids, get_stop_predictions
@@ -54,10 +57,18 @@ _static_cache: dict[str, GtfsStatic] = {}
 
 
 def get_static_data(feed_key: str) -> GtfsStatic:
-    """Load (and memoize in-process) the GTFS static data for feed_key."""
-    if feed_key not in _static_cache:
-        _static_cache[feed_key] = load_static_data(feed_key)
-    return _static_cache[feed_key]
+    """Return in-process GTFS static data for feed_key, reloading once it is older than the max age."""
+    cached = _static_cache.get(feed_key)
+    if cached is not None and time.time() - cached.loaded_at < config.STATIC_CACHE_MAX_AGE_SECONDS:
+        return cached
+    try:
+        fresh = load_static_data(feed_key)
+    except (requests.RequestException, zipfile.BadZipFile):
+        if cached is not None:
+            return cached  # keep serving the last good timetable
+        raise
+    _static_cache[feed_key] = fresh
+    return fresh
 
 
 def reload_static_data() -> None:
@@ -71,7 +82,7 @@ def _scheduled_predictions(
 ) -> list[StopPrediction]:
     """Timetable departures for trips absent from realtime (not started yet / no vehicle)."""
     realtime_trips = get_realtime_trip_ids(feed_key)
-    schedule = load_stop_schedule(feed_key, frozenset(stop_ids))
+    schedule = load_stop_schedule(static_data, frozenset(stop_ids))
     today = datetime.fromtimestamp(now, tz=_DISPLAY_TZ).date()
     lower = now - PAST_GRACE_MINUTES * 60
     upper = now + SCHEDULE_HORIZON_MINUTES * 60

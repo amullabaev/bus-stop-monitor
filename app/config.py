@@ -1,7 +1,4 @@
 """Central configuration constants for the departure board."""
-from pathlib import Path
-
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 GTFS_BASE_URL = "https://gtfs.ztp.krakow.pl"
 

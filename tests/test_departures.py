@@ -2,7 +2,9 @@ import re
 import time
 
 import pytest
+import requests
 
+from app import config, departures
 from app.departures import PAST_GRACE_MINUTES, _build_platforms_for_feed
 from app.gtfs_static import GtfsStatic, RouteMeta, TripMeta
 from app.gtfs_realtime import StopPrediction
@@ -84,3 +86,28 @@ def test_past_grace_allows_just_departed_bus(monkeypatch):
     platforms = _build_platforms_for_feed("bus")
     assert len(platforms) == 1
     assert [arrival.minutes for arrival in platforms[0].lines[0].arrivals] == [-1]
+
+
+def test_get_static_data_reloads_after_max_age(monkeypatch):
+    stale = GtfsStatic(
+        transport_type="bus",
+        loaded_at=time.time() - config.STATIC_CACHE_MAX_AGE_SECONDS - 1,
+    )
+    fresh = GtfsStatic(transport_type="bus", loaded_at=time.time())
+    monkeypatch.setattr(departures, "_static_cache", {"bus": stale})
+    monkeypatch.setattr("app.departures.load_static_data",
+                        lambda feed_key: fresh)
+
+    assert departures.get_static_data("bus") is fresh
+
+
+def test_get_static_data_keeps_stale_copy_when_refresh_fails(monkeypatch):
+    stale = GtfsStatic(transport_type="bus", loaded_at=0.0)
+    monkeypatch.setattr(departures, "_static_cache", {"bus": stale})
+
+    def failing_download(feed_key):
+        raise requests.ConnectionError("ZTP unreachable")
+
+    monkeypatch.setattr("app.departures.load_static_data", failing_download)
+
+    assert departures.get_static_data("bus") is stale

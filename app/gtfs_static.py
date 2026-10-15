@@ -37,6 +37,11 @@ class StopMeta:
 @dataclass
 class GtfsStatic:
     transport_type: str  # "bus" | "tram"
+    loaded_at: float = 0.0  # time.time() when downloaded
+    # raw zip; stop_times.txt is read from it on demand
+    archive: bytes = field(default=b"", repr=False)
+    schedule_cache: dict[frozenset[str], list[tuple[str, str, int]]] = field(
+        default_factory=dict, repr=False)
     stops: dict[str, str] = field(default_factory=dict)  # stop_id -> stop_name
     stop_meta: dict[str, StopMeta] = field(default_factory=dict)
     routes: dict[str, RouteMeta] = field(
@@ -62,23 +67,12 @@ class GtfsStatic:
         return start <= key <= end and weekdays[day.weekday()]
 
 
-def _zip_path(feed_key: str) -> "config.Path":
-    filename = config.FEEDS[feed_key]["static"]
-    return config.DATA_DIR / filename
-
-
-def ensure_static_zip(feed_key: str) -> "config.Path":
-    """Download the GTFS static zip for feed_key if missing or stale, return its path."""
-    config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-    path = _zip_path(feed_key)
-    if path.exists() and (time.time() - path.stat().st_mtime) < config.STATIC_CACHE_MAX_AGE_SECONDS:
-        return path
-
+def download_static_zip(feed_key: str) -> bytes:
+    """Fetch the GTFS static zip for feed_key into memory (never written to disk)."""
     url = f"{config.GTFS_BASE_URL}/{config.FEEDS[feed_key]['static']}"
     response = requests.get(url, timeout=config.HTTP_TIMEOUT_SECONDS)
     response.raise_for_status()
-    path.write_bytes(response.content)
-    return path
+    return response.content
 
 
 def _read_csv(zf: zipfile.ZipFile, filename: str):
@@ -88,12 +82,12 @@ def _read_csv(zf: zipfile.ZipFile, filename: str):
 
 
 def load_static_data(feed_key: str) -> GtfsStatic:
-    """Parse stops/routes/trips out of the cached GTFS static zip for feed_key."""
-    path = ensure_static_zip(feed_key)
-    data = GtfsStatic(transport_type=feed_key)
-    _schedule_cache.clear()
+    """Download and parse stops/routes/trips/calendar for feed_key, all in memory."""
+    archive = download_static_zip(feed_key)
+    data = GtfsStatic(transport_type=feed_key,
+                      loaded_at=time.time(), archive=archive)
 
-    with zipfile.ZipFile(path) as zf:
+    with zipfile.ZipFile(io.BytesIO(archive)) as zf:
         for row in _read_csv(zf, "stops.txt"):
             data.stops[row["stop_id"]] = row["stop_name"]
             data.stop_meta[row["stop_id"]] = StopMeta(
@@ -129,23 +123,18 @@ def load_static_data(feed_key: str) -> GtfsStatic:
     return data
 
 
-_schedule_cache: dict[tuple[str, frozenset[str]],
-                      list[tuple[str, str, int]]] = {}
-
-
-def load_stop_schedule(feed_key: str, stop_ids: frozenset[str]) -> list[tuple[str, str, int]]:
+def load_stop_schedule(static_data: GtfsStatic, stop_ids: frozenset[str]) -> list[tuple[str, str, int]]:
     """Return (trip_id, stop_id, departure seconds after service-day midnight) for stop_ids."""
-    key = (feed_key, stop_ids)
-    if key in _schedule_cache:
-        return _schedule_cache[key]
+    if stop_ids in static_data.schedule_cache:
+        return static_data.schedule_cache[stop_ids]
 
     rows: list[tuple[str, str, int]] = []
-    with zipfile.ZipFile(ensure_static_zip(feed_key)) as zf:
+    with zipfile.ZipFile(io.BytesIO(static_data.archive)) as zf:
         for row in _read_csv(zf, "stop_times.txt"):
             if row["stop_id"] not in stop_ids:
                 continue
             hours, minutes, seconds = row["departure_time"].split(":")
             rows.append((row["trip_id"], row["stop_id"],
                          int(hours) * 3600 + int(minutes) * 60 + int(seconds)))
-    _schedule_cache[key] = rows
+    static_data.schedule_cache[stop_ids] = rows
     return rows
